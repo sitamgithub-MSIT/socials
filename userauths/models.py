@@ -1,8 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils.text import slugify
 
 from PIL import Image
 from shortuuid.django_fields import ShortUUIDField
+import shortuuid
 
 # Create your models here.
 
@@ -69,6 +71,19 @@ class UserProfile(models.Model):
     blocked = models.ManyToManyField(User, related_name="blocked", blank=True)
 
     date = models.DateTimeField(auto_now_add=True)
+    slug = models.SlugField(unique=True, null=True, blank=True)
 
     def __str__(self):
-        return self.user.username
+        if self.full_name != "" or self.full_name is not None:
+            return self.full_name
+
+        else:
+            return self.user.username
+
+    def save(self, *args, **kwargs):
+        if self.slug is None or self.slug == "":
+            uuid = shortuuid.ShortUUID()
+            unique_id = uuid.random(length=2)
+            self.slug = slugify(self.full_name) + "-" + str(unique_id.lower())
+
+        super(UserProfile, self).save(*args, **kwargs)
