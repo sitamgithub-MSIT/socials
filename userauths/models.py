@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.text import slugify
 from django.db.models.signals import post_save
-from django.dispatch import receiver
 
 from PIL import Image
 from shortuuid.django_fields import ShortUUIDField
@@ -17,23 +16,23 @@ RELATIONSHIP = (("single", "Single"), ("married", "Married"))
 def user_directory_path(instance, filename):
     extension = filename.split(".")[-1]
     filename = "%s.%s" % (instance.user.id, extension)
-    return f"user_{instance.user.id}/{filename}"
+    return "user_{0}/{1}".format(instance.user.id, filename)
 
 
 class User(AbstractUser):
-    full_name = models.CharField(max_length=200)
-    username = models.CharField(max_length=100)
+    full_name = models.CharField(max_length=1000, blank=True, null=True)
+    username = models.CharField(max_length=100, blank=True, null=True)
     email = models.EmailField(unique=True)
-    phone = models.CharField(max_length=200)
-    gender = models.CharField(max_length=100, choices=GENDER)
+    phone = models.CharField(max_length=100, blank=True, null=True)
+    gender = models.CharField(max_length=100, choices=GENDER, blank=True, null=True)
 
-    otp = models.CharField(max_length=10, null=True, blank=True)
+    otp = models.CharField(max_length=100, blank=True, null=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
 
     def __str__(self):
-        return self.username
+        return str(self.username)
 
 
 class UserProfile(models.Model):
@@ -47,24 +46,24 @@ class UserProfile(models.Model):
         upload_to=user_directory_path, blank=True, null=True, default="default.jpg"
     )
 
-    full_name = models.CharField(max_length=200, null=True, blank=True)
-    phone = models.CharField(max_length=200, null=True, blank=True)
-    gender = models.CharField(max_length=100, choices=GENDER, default="male")
+    full_name = models.CharField(max_length=1000, blank=True, null=True)
+    phone = models.CharField(max_length=100, blank=True, null=True)
+    gender = models.CharField(max_length=100, choices=GENDER, blank=True, null=True)
     relationship = models.CharField(
-        max_length=100, choices=RELATIONSHIP, default="single"
+        max_length=100, choices=RELATIONSHIP, blank=True, null=True, default="single"
     )
-    bio = models.CharField(max_length=200, null=True, blank=True)
-    about = models.TextField(null=True, blank=True)
+    bio = models.CharField(max_length=100, blank=True, null=True)
+    about = models.TextField(max_length=1000, blank=True, null=True)
 
-    country = models.CharField(max_length=200, null=True, blank=True)
-    state = models.CharField(max_length=200, null=True, blank=True)
-    city = models.CharField(max_length=200, null=True, blank=True)
-    address = models.CharField(max_length=200, null=True, blank=True)
+    country = models.CharField(max_length=100, blank=True, null=True)
+    state = models.CharField(max_length=100, blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    address = models.CharField(max_length=1000, blank=True, null=True)
 
-    working_at = models.CharField(max_length=200, null=True, blank=True)
+    working_at = models.CharField(max_length=1000, blank=True, null=True)
 
     instagram = models.CharField(max_length=200, null=True, blank=True)
-    whatsapp = models.CharField(max_length=200, null=True, blank=True)
+    whatsapp = models.CharField(max_length=100, blank=True, null=True)
     verified = models.BooleanField(default=False)
 
     followers = models.ManyToManyField(User, related_name="followers", blank=True)
@@ -72,11 +71,15 @@ class UserProfile(models.Model):
     friends = models.ManyToManyField(User, related_name="friends", blank=True)
     blocked = models.ManyToManyField(User, related_name="blocked", blank=True)
 
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     slug = models.SlugField(unique=True, null=True, blank=True)
 
     def __str__(self):
-        return self.user.username
+        if self.full_name:
+            return str(self.full_name)
+
+        else:
+            return str(self.user.username)
 
     def save(self, *args, **kwargs):
         if self.slug is None or self.slug == "":
